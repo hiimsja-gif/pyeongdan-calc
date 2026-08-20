@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주식 평단가 계산기 | 물타기 후 평단, 목표 평단 역산</title>
+<meta name="description" content="여러 번 나눠 산 주식의 평단가를 한 번에 계산합니다. 물타기 후 새 평단, 본전까지 필요한 반등률, 목표 평단을 만들기 위해 필요한 수량까지 계산됩니다.">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:linear-gradient(170deg,#0b1220 0%,#141f38 100%);
+  background-attachment:fixed;
+  color:#f0f4fa;min-height:100vh;padding:16px 12px 48px;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:520px;margin:0 auto}
+header{padding:12px 4px 22px}
+h1{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.sub{margin-top:8px;font-size:13.5px;color:#8494b0;line-height:1.6}
+.card{
+  background:#121c30;border:1px solid #24334f;border-radius:16px;
+  padding:18px 16px;margin-bottom:14px;
+}
+.card h2{
+  font-size:13px;font-weight:700;color:#2dd4bf;letter-spacing:.3px;
+  margin-bottom:14px;text-transform:none;
+}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.field{flex:1;min-width:0}
+label{display:block;font-size:12px;color:#8494b0;margin-bottom:5px}
+input[type=text]{
+  width:100%;background:#0d1626;border:1px solid #2a3a58;border-radius:10px;
+  padding:11px 12px;color:#f0f4fa;font-size:16px;font-weight:600;
+  text-align:right;font-variant-numeric:tabular-nums;
+}
+input[type=text]:focus{outline:none;border-color:#2dd4bf;background:#0f1b2e}
+input::placeholder{color:#3d4d6b;font-weight:400}
+.buyrow{
+  display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;
+  padding:10px;background:#0e1728;border-radius:12px;border:1px solid #1f2c47;
+}
+.buyrow .idx{
+  width:22px;flex:none;font-size:12px;color:#5f7396;
+}
+.del{
+  flex:none;width:34px;height:40px;border:none;border-radius:9px;
+  background:#1d2a44;color:#7e8ca8;font-size:19px;cursor:pointer;line-height:1;
+}
+.del:hover{background:#2a3a58;color:#e84c4c}
+.addbtn{
+  width:100%;padding:11px;border:1px dashed #34456a;background:transparent;
+  border-radius:11px;color:#7e94b8;font-size:14px;cursor:pointer;font-weight:600;
+}
+.addbtn:hover{border-color:#2dd4bf;color:#2dd4bf}
+.result{
+  background:linear-gradient(160deg,#14243d 0%,#0f1b2e 100%);
+  border:1px solid #2dd4bf;
+}
+.big{
+  text-align:center;padding:6px 0 16px;border-bottom:1px solid #223349;
+}
+.big .lab{font-size:12.5px;color:#8494b0;margin-bottom:6px}
+.big .val{font-size:38px;font-weight:800;color:#2dd4bf;letter-spacing:-1px;line-height:1.1}
+.big .unit{font-size:20px;font-weight:700}
+.stats{margin-top:14px}
+.stat{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:9px 0;border-bottom:1px solid #1e2b45;font-size:14px;
+}
+.stat:last-child{border-bottom:none}
+.stat .k{color:#8494b0}
+.stat .v{font-weight:700;font-variant-numeric:tabular-nums}
+.pos{color:#e84c4c}.neg{color:#4a9eff}
+.note{
+  margin-top:12px;padding:11px 12px;background:#1a1420;border-left:3px solid #e8a34c;
+  border-radius:0 9px 9px 0;font-size:13px;line-height:1.65;color:#d8c8b0;
+}
+.divider{height:1px;background:#223349;margin:16px 0}
+.hint{font-size:12px;color:#66799a;margin-top:8px;line-height:1.6}
+footer{margin-top:26px;text-align:center;font-size:12.5px;color:#5a6c8c;line-height:1.9}
+footer a{color:#7e94b8;text-decoration:none;border-bottom:1px solid #34456a}
+.empty{text-align:center;color:#5a6c8c;font-size:14px;padding:20px 0}
+.toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:transparent;border:none;padding:14px 4px;
+  color:#7e94b8;font-size:14px;font-weight:600;cursor:pointer;
+  border-top:1px solid #1e2b45;border-bottom:1px solid #1e2b45;margin-bottom:14px;
+}
+.toggle:hover{color:#2dd4bf}
+.toggle .sign{font-size:20px;font-weight:400;line-height:1}
+.hidden{display:none}
+.sellrow{
+  display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;
+  padding:10px;background:#180f14;border-radius:12px;border:1px solid #3a2530;
+}
+.compare{
+  display:flex;gap:10px;margin-top:14px;
+}
+.cbox{
+  flex:1;background:#0e1728;border:1px solid #26364f;border-radius:12px;
+  padding:12px 10px;text-align:center;min-width:0;
+}
+.cbox.app{border-color:#e8a34c}
+.cbox .cl{font-size:11.5px;color:#8494b0;margin-bottom:6px;line-height:1.4}
+.cbox .cv{font-size:22px;font-weight:800;letter-spacing:-.5px;color:#f0f4fa}
+.cbox.app .cv{color:#e8a34c}
+.cbox .cd{font-size:11px;color:#5f7396;margin-top:5px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>주식 평단가 계산기</h1>
+  <p class="sub">여러 번 나눠 산 주식의 평단가를 한 번에 계산한다.<br>추가 매수를 몇 번 했든 행을 늘려서 넣으면 된다.</p>
+</header>
+
+<div class="card">
+  <h2>지금 보유 중인 물량</h2>
+  <div class="row">
+    <div class="field">
+      <label>보유 수량 (주)</label>
+      <input type="text" id="q0" inputmode="decimal" placeholder="100">
+    </div>
+    <div class="field">
+      <label>평단가 (원)</label>
+      <input type="text" id="p0" inputmode="decimal" placeholder="10,000">
+    </div>
+  </div>
+  <p class="hint">아직 안 샀고 처음부터 계산해보는 거라면 비워두면 된다.</p>
+</div>
+
+<div class="card">
+  <h2>추가 매수</h2>
+  <div id="buys"></div>
+  <button class="addbtn" id="add">+ 매수 추가</button>
+
+  <button class="toggle" id="selltoggle" style="margin-top:16px;margin-bottom:0">
+    <span>일부 팔았다면</span><span class="sign" id="sellsign">+</span>
+  </button>
+  <div id="sellbox" class="hidden" style="margin-top:14px">
+    <div id="sells"></div>
+    <button class="addbtn" id="addsell">+ 매도 추가</button>
+    <p class="hint">판 수량과 팔았을 때의 가격을 넣으면 된다. 앱에 뜨는 평단이 왜 달라지는지 아래 결과에서 같이 볼 수 있다.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>현재가 (선택)</h2>
+  <div class="row">
+    <div class="field">
+      <label>현재 주가 (원)</label>
+      <input type="text" id="cur" inputmode="decimal" placeholder="8,000">
+    </div>
+  </div>
+  <p class="hint">넣으면 수익률과 본전까지 필요한 반등률이 같이 계산된다.</p>
+</div>
+
+<div class="card result">
+  <div class="big">
+    <div class="lab" id="avglab">새 평단가</div>
+    <div class="val"><span id="avg">-</span><span class="unit">원</span></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="compare"></div>
+  <div id="warn"></div>
+</div>
+
+<div class="card">
+  <h2>목표 평단으로 낮추려면</h2>
+  <div class="row">
+    <div class="field">
+      <label>만들고 싶은 평단 (원)</label>
+      <input type="text" id="tgt" inputmode="decimal" placeholder="9,000">
+    </div>
+    <div class="field">
+      <label>매수할 가격 (원)</label>
+      <input type="text" id="tgtp" inputmode="decimal" placeholder="8,000">
+    </div>
+  </div>
+  <div class="stats" id="rev"></div>
+  <p class="hint">위에 입력한 내용까지 다 반영한 상태에서, 거기서 추가로 얼마나 더 사야 하는지가 나온다.</p>
+</div>
+
+<footer>
+  숫자는 입력값으로만 계산한다. 수수료와 세금은 반영하지 않는다.<br>
+  <a href="https://blog.naver.com/brightbridgepartners" target="_blank" rel="noopener">의지가 아니라 시스템이다</a>
+</footer>
+
+</div>
+
+<script>
+var buys = document.getElementById('buys');
+var rowCount = 0;
+
+function fmtInput(el){
+  el.addEventListener('input', function(){
+    var v = el.value.replace(/[^\d.]/g,'');
+    var parts = v.split('.');
+    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    var ip = v.split('.')[0];
+    var dp = v.indexOf('.') >= 0 ? '.' + v.split('.')[1] : '';
+    if(ip) ip = Number(ip).toLocaleString('en-US');
+    el.value = ip + dp;
+    calc();
+  });
+}
+
+function num(id){
+  var el = typeof id === 'string' ? document.getElementById(id) : id;
+  if(!el) return 0;
+  var v = parseFloat(el.value.replace(/,/g,''));
+  return isNaN(v) ? 0 : v;
+}
+
+function addRow(){
+  rowCount++;
+  var n = rowCount;
+  var d = document.createElement('div');
+  d.className = 'buyrow';
+  d.innerHTML =
+    '<div class="field"><label>수량 (주)</label>' +
+    '<input type="text" inputmode="decimal" class="bq" placeholder="100"></div>' +
+    '<div class="field"><label>매수가 (원)</label>' +
+    '<input type="text" inputmode="decimal" class="bp" placeholder="8,000"></div>' +
+    '<button class="del" title="삭제">&times;</button>';
+  buys.appendChild(d);
+  d.querySelectorAll('input').forEach(fmtInput);
+  d.querySelector('.del').addEventListener('click', function(){
+    d.remove();
+    calc();
+  });
+  d.querySelector('.bq').focus();
+}
+
+document.getElementById('add').addEventListener('click', addRow);
+
+var sells = document.getElementById('sells');
+var sellCount = 0;
+
+function addSell(){
+  sellCount++;
+  var d = document.createElement('div');
+  d.className = 'sellrow';
+  d.innerHTML =
+    '<div class="field"><label>판 수량 (주)</label>' +
+    '<input type="text" inputmode="decimal" class="sq" placeholder="50"></div>' +
+    '<div class="field"><label>판 가격 (원)</label>' +
+    '<input type="text" inputmode="decimal" class="sp" placeholder="12,000"></div>' +
+    '<button class="del" title="삭제">&times;</button>';
+  sells.appendChild(d);
+  d.querySelectorAll('input').forEach(fmtInput);
+  d.querySelector('.del').addEventListener('click', function(){
+    d.remove();
+    calc();
+  });
+  d.querySelector('.sq').focus();
+}
+
+document.getElementById('addsell').addEventListener('click', addSell);
+
+document.getElementById('selltoggle').addEventListener('click', function(){
+  var box = document.getElementById('sellbox');
+  var sign = document.getElementById('sellsign');
+  var open = box.classList.contains('hidden');
+  if(open){
+    box.classList.remove('hidden');
+    sign.textContent = '\u2212';
+    if(sells.children.length === 0) addSell();
+  } else {
+    box.classList.add('hidden');
+    sign.textContent = '+';
+  }
+});
+
+function comma(x, dec){
+  if(dec === undefined) dec = 0;
+  return x.toLocaleString('ko-KR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+function calc(){
+  var q = num('q0'), p = num('p0');
+  var buyQty = q, buyCost = q * p;
+  var addQty = 0, addCost = 0;
+
+  buys.querySelectorAll('.buyrow').forEach(function(r){
+    var bq = num(r.querySelector('.bq'));
+    var bp = num(r.querySelector('.bp'));
+    if(bq > 0 && bp > 0){ addQty += bq; addCost += bq * bp; }
+  });
+  buyQty += addQty; buyCost += addCost;
+
+  var sellQty = 0, sellProceeds = 0;
+  sells.querySelectorAll('.sellrow').forEach(function(r){
+    var sq = num(r.querySelector('.sq'));
+    var sp = num(r.querySelector('.sp'));
+    if(sq > 0 && sp > 0){ sellQty += sq; sellProceeds += sq * sp; }
+  });
+
+  var avgEl = document.getElementById('avg');
+  var labEl = document.getElementById('avglab');
+  var statsEl = document.getElementById('stats');
+  var warnEl = document.getElementById('warn');
+  var cmpEl = document.getElementById('compare');
+
+  if(buyQty <= 0 || buyCost <= 0){
+    avgEl.textContent = '-';
+    labEl.textContent = '새 평단가';
+    statsEl.innerHTML = '<div class="empty">수량과 가격을 넣으면 계산된다</div>';
+    warnEl.innerHTML = ''; cmpEl.innerHTML = '';
+    reverse();
+    return;
+  }
+
+  var buyAvg = buyCost / buyQty;
+  var dec = buyAvg < 100 ? 2 : 0;
+  var hasSell = sellQty > 0 && sellProceeds > 0;
+  var restQty = buyQty - sellQty;
+
+  avgEl.textContent = comma(buyAvg, dec);
+  labEl.textContent = hasSell ? '평단가 (원가 기준)' : '새 평단가';
+
+  var h = '';
+  h += stat('총 매수 수량', comma(buyQty, buyQty % 1 ? 4 : 0) + '주');
+  h += stat('총 매수 금액', comma(buyCost) + '원');
+
+  if(q > 0 && p > 0 && addQty > 0){
+    var pct = ((buyAvg - p) / p) * 100;
+    h += stat('평단 변화',
+      comma(p, p < 100 ? 2 : 0) + ' \u2192 ' + comma(buyAvg, dec) +
+      ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)');
+  }
+
+  if(hasSell){
+    if(restQty < 0){
+      cmpEl.innerHTML = '<div class="note">판 수량(' + comma(sellQty, sellQty % 1 ? 4 : 0) +
+        '주)이 산 수량(' + comma(buyQty, buyQty % 1 ? 4 : 0) + '주)보다 많다. 숫자를 다시 확인해보자.</div>';
+      statsEl.innerHTML = h;
+      warnEl.innerHTML = '';
+      reverse();
+      return;
+    }
+    var realized = sellProceeds - sellQty * buyAvg;
+    var rcls = realized >= 0 ? 'pos' : 'neg';
+    h += stat('판 수량', comma(sellQty, sellQty % 1 ? 4 : 0) + '주');
+    h += stat('매도 대금', comma(sellProceeds) + '원');
+    h += stat('실현손익', '<span class="' + rcls + '">' + (realized >= 0 ? '+' : '') + comma(realized) + '원</span>');
+    h += stat('남은 수량', comma(restQty, restQty % 1 ? 4 : 0) + '주');
+  }
+
+  var qtyNow = hasSell ? restQty : buyQty;
+  var costNow = hasSell ? (buyCost - sellQty * buyAvg) : buyCost;
+
+  var cur = num('cur');
+  if(cur > 0 && qtyNow > 0){
+    var val = qtyNow * cur;
+    var pl = val - costNow;
+    var plPct = (pl / costNow) * 100;
+    var cls = pl >= 0 ? 'pos' : 'neg';
+    h += stat('평가금액', comma(val) + '원');
+    h += stat('평가손익', '<span class="' + cls + '">' + (pl >= 0 ? '+' : '') + comma(pl) + '원</span>');
+    h += stat('수익률', '<span class="' + cls + '">' + (plPct >= 0 ? '+' : '') + plPct.toFixed(2) + '%</span>');
+    if(cur < buyAvg){
+      var need = ((buyAvg - cur) / cur) * 100;
+      h += stat('본전까지 필요한 반등률', '<span class="pos">+' + need.toFixed(2) + '%</span>');
+    }
+  }
+  statsEl.innerHTML = h;
+
+  // 매도가 있을 때 두 평단 비교
+  if(hasSell && restQty > 0){
+    var appAvg = (buyCost - sellProceeds) / restQty;
+    var adec = Math.abs(appAvg) < 100 ? 2 : 0;
+    var appTxt = appAvg <= 0 ? '0원 이하' : comma(appAvg, adec) + '원';
+    var gap = appAvg - buyAvg;
+    var gapTxt = (gap >= 0 ? '+' : '') + comma(gap, Math.abs(gap) < 100 ? 2 : 0) + '원';
+
+    cmpEl.innerHTML =
+      '<div class="compare">' +
+        '<div class="cbox"><div class="cl">원가 기준 평단</div>' +
+        '<div class="cv">' + comma(buyAvg, dec) + '</div>' +
+        '<div class="cd">판 만큼 원가도 같이 줄어서<br>값이 그대로다</div></div>' +
+        '<div class="cbox app"><div class="cl">앱에 이렇게 뜰 수 있다</div>' +
+        '<div class="cv">' + appTxt + '</div>' +
+        '<div class="cd">매도 대금을 원가에서<br>그대로 뺀 값 (' + gapTxt + ')</div></div>' +
+      '</div>' +
+      '<div class="note">같은 물량인데 값이 다르다. 앱이 판 물량의 원가가 아니라 실제로 받은 돈을 빼면 이렇게 된다. ' +
+      '이익을 보고 팔았으면 남은 물량의 평단이 실제보다 낮게, 손실을 보고 팔았으면 높게 표시된다. ' +
+      '어느 쪽으로 계산하는지는 거래소마다 다르니 본인 계정 숫자로 한 번 맞춰보면 된다.</div>';
+  } else if(hasSell && restQty === 0){
+    cmpEl.innerHTML = '<div class="note">전부 팔아서 남은 수량이 없다. 실현손익만 확정됐고 평단은 더 이상 의미가 없다.</div>';
+  } else {
+    cmpEl.innerHTML = '';
+  }
+
+  // 투입금이 크게 늘어난 경우에만 안내
+  if(q > 0 && p > 0 && addCost > 0 && !hasSell){
+    var base = q * p;
+    if((addCost / base) * 100 >= 50){
+      warnEl.innerHTML = '<div class="note">이번 추가 매수로 투입금이 ' +
+        comma(base) + '원에서 ' + comma(buyCost) + '원으로 늘었다. ' +
+        '평단은 내려가지만 틀렸을 때 잃는 금액은 그만큼 커진다. ' +
+        '이 매수가 원래 계획에 있던 건지 한 번 확인하고 넣는 게 좋다.</div>';
+    } else {
+      warnEl.innerHTML = '';
+    }
+  } else {
+    warnEl.innerHTML = '';
+  }
+
+  reverse();
+}
+
+function stat(k, v){
+  return '<div class="stat"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+}
+
+function reverse(){
+  var revEl = document.getElementById('rev');
+  var q = num('q0'), p = num('p0');
+  var tgt = num('tgt'), tp = num('tgtp');
+
+  var buyQty = q, buyCost = q * p;
+  buys.querySelectorAll('.buyrow').forEach(function(r){
+    var bq = num(r.querySelector('.bq')), bp = num(r.querySelector('.bp'));
+    if(bq > 0 && bp > 0){ buyQty += bq; buyCost += bq * bp; }
+  });
+
+  var sellQty = 0;
+  sells.querySelectorAll('.sellrow').forEach(function(r){
+    var sq = num(r.querySelector('.sq')), sp = num(r.querySelector('.sp'));
+    if(sq > 0 && sp > 0){ sellQty += sq; }
+  });
+
+  if(buyQty <= 0 || buyCost <= 0 || tgt <= 0 || tp <= 0){
+    revEl.innerHTML = '<div class="empty">목표 평단과 매수 가격을 넣으면 계산된다</div>';
+    return;
+  }
+
+  var curAvg = buyCost / buyQty;
+  var totalQty = buyQty - sellQty;
+  var totalCost = totalQty * curAvg;
+
+  if(totalQty <= 0){
+    revEl.innerHTML = '<div class="note">남은 수량이 없어서 계산할 게 없다.</div>';
+    return;
+  }
+  if(tp >= tgt){
+    revEl.innerHTML = '<div class="note">매수 가격이 목표 평단보다 높거나 같으면 평단을 그 아래로 내릴 수 없다. ' +
+      '목표 평단을 ' + comma(tp) + '원보다 높게 잡거나, 더 낮은 가격에 사야 한다.</div>';
+    return;
+  }
+  if(tgt >= curAvg){
+    revEl.innerHTML = '<div class="note">목표 평단 ' + comma(tgt) + '원은 지금 평단 ' +
+      comma(curAvg, curAvg < 100 ? 2 : 0) + '원보다 낮지 않다. 추가 매수 없이 이미 도달한 상태다.</div>';
+    return;
+  }
+
+  var x = (totalCost - totalQty * tgt) / (tgt - tp);
+  var cost = x * tp;
+
+  var h = '';
+  h += stat('필요 수량', comma(x, 2) + '주');
+  h += stat('필요 금액', comma(cost) + '원');
+  h += stat('매수 후 총 수량', comma(totalQty + x, 2) + '주');
+  h += stat('매수 후 총 투입금', comma(totalCost + cost) + '원');
+  revEl.innerHTML = h;
+}
+
+['q0','p0','cur','tgt','tgtp'].forEach(function(id){
+  fmtInput(document.getElementById(id));
+});
+
+addRow();
+calc();
+</script>
+</body>
+</html>
